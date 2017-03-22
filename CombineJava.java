@@ -299,9 +299,10 @@ public class CombineJava{
 			else {
 				if(s1.contains("public class ") || s1.contains("public interface ") ) {
 					fos.write( 
-							(
-									s1.substring(s1.indexOf("public ")+"public ".length())+"\n"
-									).getBytes());
+						(s1.substring(s1.indexOf("public ")+
+						      "public ".length())+"\n"
+						).getBytes()
+					);
 				}
 				else if(s1.contains("public ")) {
 					fos.write(removePackageRefs(s1 + "\n").getBytes());
