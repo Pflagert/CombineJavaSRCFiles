@@ -14,53 +14,43 @@ public class CombineJava{
 	// list of unique packages
 	static ArrayList<String> packages = new ArrayList<String>();
 
-	// name of the file with public class *
-	static String mainFileName = "src/typecheck/Typecheck.java";
-	// directory where either subdirectories or source files are located
-	static String sourceDirectory = "/home/pflagert/git/CS453/HW2/src";
+/*
+    	static String mainFileName = "src/typecheck/Typecheck.java";
+    	static String sourceDirectoryName = "/home/pflagert/git/CS453/HW2/src";
+	static String destFilePath = "/home/pflagert/git/CS453/HW2/combinedSrc/";
 	static String destFileName = "Typecheck.java";
-	static String tmpFileName = "NO_IMPORTS_" + destFileName;
+	static String tmpFileName = null;
+*/
+	// name of the file with public class *
+	static String mainFileName = null;
+	// directory where either subdirectories or source files are located
+	static String sourceDirectoryName = null;
+	static String destFilePath = null;
+	static String destFileName = null;
+	static String tmpFileName = null;
 	static File mainFile; // a file with public class *
+	static File sourceDirectory;
+	static File destFileDirectory; // the directory where destFile and tmpFile will be stored
 	static File destFile; // the combined file
 	static File tmpFile; // temporary file
 
 	public static void main(String ar[])throws Exception{
-
-		/*Scanner scan=new Scanner(System.in);
-        System.out.println("Enter source Directory");
-        String dir=scan.nextLine();
-        System.out.println("Enter the Destination file name with ext.");
-        String dest=scan.nextLine(); */
+		requestFileNames();
+		checkFileErrors();
 		long startTime = System.currentTimeMillis();
 		long endTime;
 		int seconds;
-		mainFile=new File(mainFileName);
-		destFile=new File(destFileName);
-		tmpFile=new File(tmpFileName);
-		
-		// check if the destination file exists, if so exit
-		if(destFile.exists()) {
-			System.out.println("Destination file: " + destFile.getName() 
-			+ " already exists");
-			System.exit(1);
-		}
-		// check if the temporary file exists, if so exit
-		if(tmpFile.exists()) {
-			System.out.println("Temporary file: " + tmpFile.getName() 
-			+ " already exists");
-			System.exit(1);
-		}
 
-		fos=new FileOutputStream(tmpFileName);
+		fos=new FileOutputStream(tmpFile.getPath());
 		writeMainFile(mainFile);
-		combine(sourceDirectory);
+		combine(sourceDirectoryName);
 		fos.close();
 
 		printPackages();
 		fixImports();
 		printImports();
 
-		fos = new FileOutputStream(destFileName);
+		fos = new FileOutputStream(destFile.getPath());
 		createDestFile(tmpFile);		
 		fos.close();
 
@@ -72,6 +62,104 @@ public class CombineJava{
 		}
 		else {
 			System.out.println("\nFinished in " + millis + " milliseconds");
+		}
+	}
+
+
+	/**
+	 * Asks the user for the paths / names of files.
+	 * If they are not already set.
+	 */
+	public static void requestFileNames() {
+		Scanner scan = new Scanner(System.in);
+		if(mainFileName == null) {
+			System.out.println("Enter the path to your main file: ");
+			mainFileName = scan.nextLine();
+		}
+		mainFile=new File(mainFileName);
+		checkFileErrors();
+		if(sourceDirectoryName == null) {
+			System.out.println("Enter the path to your java source files: ");
+			sourceDirectoryName = scan.nextLine();
+		}
+		sourceDirectory=new File(sourceDirectoryName);
+		checkFileErrors();
+		if(destFilePath == null) {
+			System.out.println("Enter the directory you want the output file to be stored in: ");
+			destFilePath = scan.nextLine();
+			if(!destFilePath.endsWith("/")) {
+				destFilePath += "/";
+			}
+		}
+		destFileDirectory = new File(destFilePath);
+		checkFileErrors();
+		if(destFileName == null) {
+			System.out.println("Enter the name of the output file you would like to create: ");
+			destFileName = scan.nextLine();
+		}
+		destFile=new File(destFilePath+destFileName);
+		checkFileErrors();
+		if(tmpFileName == null) {
+			tmpFileName = "NO_IMPORTS_" + destFileName;
+		}
+		tmpFile=new File(destFilePath+tmpFileName);
+		scan.close();
+	}
+
+
+	/**
+	 * Checks for conditions that need to be / should be true
+	 * for this program to function correctly
+	 */
+	public static void checkFileErrors() {
+		// check if the main file exists, if not exit
+		if(mainFile != null && !mainFile.exists()) {
+			System.out.println("Main file: " + mainFile.getPath() 
+			+ " does not exist");
+			System.exit(1);
+		}
+		if(sourceDirectory != null) {
+			// check if source directory exists and ensure that it is a directory 
+			if(sourceDirectory.exists() && !sourceDirectory.isDirectory()) {
+				System.out.println("Destination directory: " + sourceDirectory.getPath() 
+				+ " is not a directory");
+				System.exit(1);
+			}
+			else if(!sourceDirectory.exists()) {
+				System.out.println("Source Directory: " + sourceDirectory.getPath() +
+						" does not exists."); 
+				System.exit(1);
+			}
+		}
+		// check if the directory exists and ensure that it is a directory
+		if(destFileDirectory != null) {
+			if(destFileDirectory.exists() && !destFileDirectory.isDirectory()) {
+				System.out.println("Destination directory: " + destFileDirectory.getPath() 
+				+ " is not a directory");
+				System.exit(1);
+			}
+			else if(!destFileDirectory.exists()) {
+				System.out.println("Directory: " + destFileDirectory.getPath() +
+						" does not exists.\n" + 
+						"Creating: " +  destFileDirectory.getPath());
+				if(!destFileDirectory.mkdirs()){
+					System.out.println("Failded to create: " + destFileDirectory.getPath());
+					System.exit(1);
+				}
+			}
+		}
+		// check if the destination file exists, if so exit
+
+		if(destFile != null && destFile.exists()) {
+			System.out.println("Destination file: " + destFile.getPath() 
+			+ " already exists");
+			System.exit(1);
+		}
+		// check if the temporary file exists, if so exit
+		if(tmpFile != null && tmpFile.exists()) {
+			System.out.println("Temporary file: " + tmpFile.getPath() 
+			+ " already exists");
+			System.exit(1);
 		}
 	}
 
@@ -199,7 +287,6 @@ public class CombineJava{
 						continue;
 					}
 					else if(!c.duplecate(written,f2)){
-						count++;
 						writeFileAsNestedClass(f2);
 					}
 					else
@@ -244,9 +331,10 @@ public class CombineJava{
 				every50Lines = 0;
 			}
 		}
+		written.add(f1);
 		printRest("\t[done]\n");
-		br1.close();
 		count++;
+		br1.close();
 
 	}
 
@@ -293,16 +381,22 @@ public class CombineJava{
 					packages.add(s1);
 			}
 			else if(s1.contains("import ")) {
-				if(!imports.contains(s1))
+				if(s1.contains("org.junit")) {
+					printRest("\t[SKIPPED] JUNIT");;
+					br1.close();
+					return;
+				}
+				else if(!imports.contains(s1)) {
 					imports.add(s1);
+				}
 			}
 			else {
 				if(s1.contains("public class ") || s1.contains("public interface ") ) {
 					fos.write( 
-						(s1.substring(s1.indexOf("public ")+
-						      "public ".length())+"\n"
-						).getBytes()
-					);
+							(s1.substring(s1.indexOf("public ")+
+									"public ".length())+"\n"
+									).getBytes()
+							);
 				}
 				else if(s1.contains("public ")) {
 					fos.write(removePackageRefs(s1 + "\n").getBytes());
@@ -317,6 +411,9 @@ public class CombineJava{
 			}
 		}
 		printRest("\t[done]");
+		written.add(f1);
+		count++;
+		CLOSE:
 		br1.close();
 	}
 }
